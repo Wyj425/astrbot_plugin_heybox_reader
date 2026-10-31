@@ -1,0 +1,4 @@
+aiohttp>=3.10,<4
+Pillow>=10,<14
+qrcode>=7,<9
+httpx>=0.27,<1

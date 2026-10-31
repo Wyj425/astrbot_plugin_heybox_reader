@@ -1,0 +1,47 @@
+{
+  "enabled": {
+    "type": "bool",
+    "default": true,
+    "description": "启用平台读取"
+  },
+  "auto_read": {
+    "type": "bool",
+    "default": true,
+    "description": "在已触发模型回复的消息中自动读取分享链接及配图"
+  },
+  "allowed_platforms": {
+    "type": "list",
+    "default": [],
+    "description": "允许的 AstrBot 消息平台实例ID；空为全部"
+  },
+  "cache_seconds": {
+    "type": "int",
+    "default": 600,
+    "description": "共享搜索和内容缓存秒数（30–1800）"
+  },
+  "max_images": {
+    "type": "int",
+    "default": 6,
+    "description": "最多读取的配图数量（0–8）"
+  },
+  "max_comments": {
+    "type": "int",
+    "default": 24,
+    "description": "最多读取的可见评论数量（0–36）"
+  },
+  "heybox_max_images": {
+    "type": "int",
+    "default": 6,
+    "description": "最多读取的配图数量（0–8）"
+  },
+  "heybox_max_comments": {
+    "type": "int",
+    "default": 24,
+    "description": "最多读取的可见评论数量（0–36）"
+  },
+  "heybox_cache_seconds": {
+    "type": "int",
+    "default": 600,
+    "description": "共享搜索和内容缓存秒数（30–1800）"
+  }
+}

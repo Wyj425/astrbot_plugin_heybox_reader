@@ -1,0 +1,13 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>平台账号与状态</title>
+<style>body{font:16px system-ui;background:#f5f7fa;color:#243545;max-width:840px;margin:30px auto;padding:24px}section{background:white;border-radius:14px;padding:24px;margin:20px 0}button{padding:10px 20px;margin:6px;border:1px solid #b9c8cf;border-radius:8px;background:white;cursor:pointer}img{width:240px;height:240px}pre{white-space:pre-wrap}#notice{line-height:1.8}</style>
+<h1>平台账号与状态</h1><p>在本插件内登录。社区精选、聊天读取和游戏知识库共用这个账号；凭据不会显示在页面或发给模型。</p>
+<section><button id="refresh">刷新状态</button><button id="verify">验证当前登录</button><button id="login">获取登录二维码</button><p id="notice"></p><img id="qr" alt="登录二维码" hidden><pre id="state"></pre></section>
+<p>小红书须先在插件配置中填写读取服务地址和服务访问令牌。二维码请使用对应平台 App 扫描；若提示验证码或设备确认，请在平台客户端完成。登录过期不会反复自动登录。</p>
+<script type="module">
+const $=id=>document.getElementById(id);let poll=null;
+function render(data){const state=data.login||data;const labels={idle:'尚未发起新的扫码登录',scan:'请使用平台 App 扫码',confirm:'已扫码，请在手机确认',done:'登录成功',expired:'二维码已过期，请重新获取',error:'登录遇到问题，请稍后重试'};$('notice').textContent=labels[state.state]||'正在读取';$('qr').hidden=!state.qr;if(state.qr&&/^data:image\/(png|jpeg);base64,/.test(state.qr))$('qr').src=state.qr;if(data.source){document.querySelector('h1').textContent=data.source+' · 账号与状态';$('state').textContent='账号：'+(data.logged_in===true?'已验证登录':data.logged_in===false?'尚未登录':data.credential_present?'已保存登录或服务配置，尚未验证':'尚未配置')+'\n最近读取成功：'+(data.last_success?new Date(data.last_success*1000).toLocaleString('zh-CN'):'暂无')+'\n最近读取状态：'+(data.last_error?'暂不可用（'+data.last_error+'）':'正常')}if(['done','expired','error'].includes(state.state)&&poll){clearInterval(poll);poll=null}}
+async function refresh(){try{render(await window.AstrBotPluginPage.apiGet('status'))}catch(e){$('notice').textContent=e.message}}
+$('refresh').onclick=refresh;$('verify').onclick=async()=>{try{const result=await window.AstrBotPluginPage.apiPost('verify',{});await refresh();$('notice').textContent=result.logged_in?'当前账号已登录，可以读取内容。':'账号未登录，请扫码。'}catch(e){$('notice').textContent=e.message}};
+$('login').onclick=async()=>{try{$('login').disabled=true;render(await window.AstrBotPluginPage.apiPost('login',{}));if(poll)clearInterval(poll);poll=setInterval(refresh,4000)}catch(e){$('notice').textContent=e.message}finally{$('login').disabled=false}};
+window.addEventListener('pagehide',()=>clearInterval(poll));refresh();
+</script></html>
