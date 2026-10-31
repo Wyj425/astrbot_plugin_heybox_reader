@@ -1,6 +1,6 @@
 name: astrbot_plugin_heybox_reader
 display_name: 小黑盒内容读取
-desc: 独立登录、检索、正文与可见评论读取，为聊天和社区分享提供接口。
+desc: 让你的 AI 机器人看懂小黑盒帖子，阅读正文、配图和评论，还能按游戏主题找帖子。
 version: 1.0.1
 author: Wyj425
 astrbot_version: ">=4.29.3"
