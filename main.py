@@ -5,7 +5,7 @@ from astrbot.api.event import filter, AstrMessageEvent
 from .runtime import PlatformService
 from .backend import Backend
 
-@register('astrbot_plugin_heybox_reader','Wyj425','小黑盒独立搜索、内容读取、登录和共享缓存','1.0.2')
+@register('astrbot_plugin_heybox_reader','Wyj425','小黑盒独立搜索、内容读取、登录和共享缓存','1.0.3')
 class PlatformReader(PlatformService, Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         Star.__init__(self,context)

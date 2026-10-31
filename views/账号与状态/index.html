@@ -1,13 +1,163 @@
-<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>平台账号与状态</title>
-<style>body{font:16px system-ui;background:#f5f7fa;color:#243545;max-width:840px;margin:30px auto;padding:24px}section{background:white;border-radius:14px;padding:24px;margin:20px 0}button{padding:10px 20px;margin:6px;border:1px solid #b9c8cf;border-radius:8px;background:white;cursor:pointer}img{width:240px;height:240px}pre{white-space:pre-wrap}#notice{line-height:1.8}</style>
-<h1>平台账号与状态</h1><p>在本插件内登录。社区精选、聊天读取和游戏知识库共用这个账号；凭据不会显示在页面或发给模型。</p>
-<section><button id="refresh">刷新状态</button><button id="verify">验证当前登录</button><button id="login">获取登录二维码</button><p id="notice"></p><img id="qr" alt="登录二维码" hidden><pre id="state"></pre></section>
-<p>小红书须先在插件配置中填写读取服务地址和服务访问令牌。二维码请使用对应平台 App 扫描；若提示验证码或设备确认，请在平台客户端完成。登录过期不会反复自动登录。</p>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>小黑盒 · 账号与状态</title>
+<style>
+:root{font-family:system-ui,"Microsoft YaHei",sans-serif;color:#243545;background:#f5f7fa;font-size:15px}
+*{box-sizing:border-box}body{max-width:960px;margin:0 auto;padding:32px 24px 48px;line-height:1.8}
+h1{font-size:28px;line-height:1.4;margin:0 0 10px}h2{font-size:18px;margin:0 0 14px}
+p{margin:8px 0}.intro,.muted{color:#5e6d7e}.intro{max-width:760px}
+section{background:#fff;border:1px solid #e3e9ef;border-radius:14px;padding:24px;margin-top:22px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}button{font:inherit;line-height:1.5;border:1px solid #c8d4e0;border-radius:8px;background:#fff;color:#294866;padding:10px 16px;cursor:pointer}
+button:hover{background:#edf4fa}button.primary{background:#2868aa;color:white;border-color:#2868aa}button:disabled{opacity:.6;cursor:wait}
+#notice{min-height:27px;margin:14px 0 0}#notice[data-tone=error]{color:#a12c2c}
+.status-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:20px}
+.status-item{padding:14px 16px;background:#f7f9fc;border-radius:9px}.label{font-size:13px;color:#65758a}.value{font-weight:600;margin-top:4px;overflow-wrap:anywhere}
+#account[data-state=ok]{color:#23764b}#account[data-state=warn]{color:#8a6518}
+#qr-panel{text-align:center;background:#f7f9fc;border-radius:10px;padding:20px;margin-top:20px}#qr{width:240px;max-width:100%;height:auto;background:white}
+ol{padding-left:24px;margin:0}li{padding-left:3px;margin:8px 0}.example{border-left:3px solid #91b4d7;background:#f4f8fc;padding:10px 14px;border-radius:0 7px 7px 0;margin:14px 0}
+a{color:#2868aa}details{margin-top:14px;color:#5e6d7e}summary{cursor:pointer}.steps{display:grid;grid-template-columns:1fr 1fr;gap:22px}.steps section{margin-top:22px}
+code{background:#eef2f7;padding:2px 5px;border-radius:4px;font-size:.92em}.tip{font-size:14px;color:#5e6d7e}
+[hidden]{display:none!important}@media(max-width:700px){body{padding:22px 16px}.status-grid,.steps{grid-template-columns:1fr}section{padding:20px}h1{font-size:24px}.steps{gap:0}.status-grid{gap:8px}}
+</style>
+</head>
+<body data-source="小黑盒">
+<header><h1 id="title">账号与状态</h1><p class="intro" id="intro">在这里验证登录状态，或使用手机 App 扫码登录。</p></header>
+<section id="setup" hidden>
+<h2>先连接小红书读取服务</h2>
+<p>请先在本插件配置中填写<strong>读取服务地址</strong>和<strong>访问令牌</strong>，保存后再回来扫码。</p>
+<p class="tip">还没部署读取服务？打开 <a href="https://github.com/Wyj425/astrbot_plugin_xhs_reader/blob/main/docs/INSTALL.md" target="_blank" rel="noopener noreferrer">手动部署教程</a>，或使用 <a href="https://github.com/Wyj425/astrbot_plugin_xhs_reader#readme" target="_blank" rel="noopener noreferrer">README 中的 Agent 提示词</a>完成配置。</p>
+</section>
+<section aria-labelledby="account-heading">
+<h2 id="account-heading">登录与读取状态</h2>
+<div class="actions">
+<button class="primary" id="verify">验证当前登录</button>
+<button id="login">获取登录二维码</button>
+<button id="refresh">刷新状态</button>
+</div>
+<p id="notice" role="status" aria-live="polite">正在获取状态…</p>
+<div class="status-grid">
+<div class="status-item"><div class="label">账号状态</div><div class="value" id="account">正在读取…</div></div>
+<div class="status-item"><div class="label">最近成功读取</div><div class="value" id="last-success">暂无记录</div></div>
+<div class="status-item"><div class="label">最近一次读取</div><div class="value" id="last-result">暂无记录</div></div>
+</div>
+<p class="tip" id="verification">点击“验证当前登录”，检查账号现在是否可用。</p>
+<div id="qr-panel" hidden><img id="qr" alt="登录二维码"><p id="qr-help">请使用手机 App 扫码，并在手机上确认登录。</p><p class="tip">二维码过期后，重新点击“获取登录二维码”。</p></div>
+<details id="diagnostics" hidden><summary>查看读取错误信息</summary><p id="error-detail"></p></details>
+</section>
+<div class="steps">
+<section><h2>第一次登录</h2>
+<ol><li>先点击<strong>验证当前登录</strong>；如果账号已登录，可直接开始使用。</li>
+<li>尚未登录时，点击<strong>获取登录二维码</strong>。</li>
+<li id="scan-step">使用手机 App 扫码，在手机上确认登录。</li>
+<li>点击<strong>验证当前登录</strong>，确认账号可用。</li></ol>
+<p class="tip">如提示验证码或设备确认，请先在手机或平台登录页面完成验证。登录失效后，在这里重新扫码即可。</p>
+</section>
+<section><h2>登录后怎么用</h2>
+<p id="usage">把分享链接或卡片发给机器人，再问一个具体问题。</p>
+<div class="example" id="example"></div>
+<p class="tip">私聊中直接发送；群聊中可以引用分享卡片，再真正 @机器人提问。</p>
+<p class="tip" id="limits"></p>
+</section>
+</div>
 <script type="module">
-const $=id=>document.getElementById(id);let poll=null;
-function render(data){const state=data.login||data;const labels={idle:'尚未发起新的扫码登录',scan:'请使用平台 App 扫码',confirm:'已扫码，请在手机确认',done:'登录成功',expired:'二维码已过期，请重新获取',error:'登录遇到问题，请稍后重试'};$('notice').textContent=labels[state.state]||'正在读取';$('qr').hidden=!state.qr;if(state.qr&&/^data:image\/(png|jpeg);base64,/.test(state.qr))$('qr').src=state.qr;if(data.source){document.querySelector('h1').textContent=data.source+' · 账号与状态';$('state').textContent='账号：'+(data.logged_in===true?'已验证登录':data.logged_in===false?'尚未登录':data.credential_present?'已保存登录或服务配置，尚未验证':'尚未配置')+'\n最近读取成功：'+(data.last_success?new Date(data.last_success*1000).toLocaleString('zh-CN'):'暂无')+'\n最近读取状态：'+(data.last_error?'暂不可用（'+data.last_error+'）':'正常')}if(['done','expired','error'].includes(state.state)&&poll){clearInterval(poll);poll=null}}
-async function refresh(){try{render(await window.AstrBotPluginPage.apiGet('status'))}catch(e){$('notice').textContent=e.message}}
-$('refresh').onclick=refresh;$('verify').onclick=async()=>{try{const result=await window.AstrBotPluginPage.apiPost('verify',{});await refresh();$('notice').textContent=result.logged_in?'当前账号已登录，可以读取内容。':'账号未登录，请扫码。'}catch(e){$('notice').textContent=e.message}};
-$('login').onclick=async()=>{try{$('login').disabled=true;render(await window.AstrBotPluginPage.apiPost('login',{}));if(poll)clearInterval(poll);poll=setInterval(refresh,4000)}catch(e){$('notice').textContent=e.message}finally{$('login').disabled=false}};
-window.addEventListener('pagehide',()=>clearInterval(poll));refresh();
-</script></html>
+const $=id=>document.getElementById(id);
+const copies={
+  'B站':{
+    app:'哔哩哔哩 App',
+    intro:'登录 B站后，把视频链接或卡片分享给机器人，就能讨论视频资料、可用字幕和热门评论。',
+    usage:'支持视频链接、b23.tv 短链接和 BV 号。分享后，可以继续追问视频信息和评论区的观点。',
+    example:'这个视频主要讲了什么？你读到的是字幕还是简介？热门评论怎么看？',
+    limits:'有可用字幕时读取字幕节选；没有字幕时使用视频简介。当前不分析视频画面和音轨。'
+  },
+  '小黑盒':{
+    app:'小黑盒 App',
+    intro:'登录小黑盒后，把帖子链接或卡片分享给机器人，就能一起聊正文、配图和评论区。',
+    usage:'从小黑盒 App 复制帖子链接，或者分享帖子卡片，再告诉机器人想了解哪些内容。',
+    example:'读一下这篇帖子的正文、配图和评论，大家在讨论什么？',
+    limits:'配图需要支持图片输入的聊天模型。评论读取范围以当前可取得的部分内容为准。'
+  },
+  '小红书':{
+    app:'小红书 App',
+    intro:'连接读取服务并登录小红书后，把笔记分享给机器人，就能一起聊正文、配图和评论。',
+    usage:'从小红书 App 复制完整的笔记分享链接，发给机器人后继续提问。',
+    example:'帮我总结这篇笔记。配图里有哪些重点？评论区有哪些不同意见？',
+    limits:'配图需要支持图片输入的聊天模型。评论读取范围以当前可取得的部分内容为准。'
+  }
+};
+let poll=null,source=document.body.dataset.source,copy=null;
+function configure(value){
+  if(!copies[value])return;
+  source=value;copy=copies[value];
+  $('title').textContent=source+' · 账号与状态';document.title=source+' · 账号与状态';
+  $('intro').textContent=copy.intro;$('usage').textContent=copy.usage;
+  $('example').textContent=copy.example;$('limits').textContent=copy.limits;
+  $('scan-step').textContent='使用手机上的'+copy.app+'扫码，在手机上确认登录。';
+  $('qr-help').textContent='请使用'+copy.app+'扫码，并在手机上确认登录。';
+  $('setup').hidden=source!=='小红书';
+}
+function message(text,error=false){$('notice').textContent=text;$('notice').dataset.tone=error?'error':'normal'}
+function timestamp(value){
+  const date=new Date(Number(value)*1000);
+  return Number(value)>0&&!Number.isNaN(date.getTime())?date.toLocaleString('zh-CN'):'暂无记录';
+}
+function render(data){
+  if(data.source)configure(data.source);
+  const state=data.login||data;
+  if(data.source){
+    const logged=data.logged_in;
+    $('account').textContent=logged===true?'已验证登录':logged===false?'尚未登录':data.credential_present?'已保存配置，待验证':'尚未验证';
+    $('account').dataset.state=logged===true?'ok':'warn';
+    $('last-success').textContent=timestamp(data.last_success);
+    $('last-result').textContent=data.last_error?'读取未成功':data.last_success?'读取成功':'暂无读取记录';
+    $('verification').textContent=data.verified_at?'最近验证：'+timestamp(data.verified_at)+'。可再次点击“验证当前登录”检查当前状态。':'点击“验证当前登录”，检查账号现在是否可用。';
+    $('diagnostics').hidden=!data.last_error;
+    $('error-detail').textContent=data.last_error?'错误类型：'+String(data.last_error)+'。请验证账号、检查连接，或重新发送链接。':'';
+  }
+  const active=['scan','confirm'].includes(state.state);
+  const validQR=typeof state.qr==='string'&&/^data:image\/(png|jpeg);base64,/.test(state.qr);
+  $('qr-panel').hidden=!(active&&validQR);
+  if(active&&validQR)$('qr').src=state.qr;else $('qr').removeAttribute('src');
+  const labels={
+    idle:data.logged_in===true?'账号已验证，可以开始分享内容。':'先验证当前登录；尚未登录时，再获取二维码。',
+    scan:'请使用'+(copy?copy.app:'手机 App')+'扫码，并在手机上确认。',
+    confirm:'已扫码，请在手机上确认登录。',
+    done:data.logged_in===true?'账号已验证，可以开始分享内容。':'扫码已完成，请点击“验证当前登录”确认账号可用。',
+    expired:'二维码已过期，请重新获取。',
+    error:'本次登录未完成，请重新获取二维码或稍后重试。'
+  };
+  message(labels[state.state]||'状态已刷新。',state.state==='error');
+  if(['done','expired','error'].includes(state.state)&&poll){clearInterval(poll);poll=null}
+}
+async function refresh(showError=true){
+  try{render(await window.AstrBotPluginPage.apiGet('status'));return true}
+  catch(error){if(showError)message('状态读取失败：'+error.message,true);return false}
+}
+$('refresh').onclick=async()=>{const button=$('refresh');button.disabled=true;try{await refresh()}finally{button.disabled=false}};
+$('verify').onclick=async()=>{
+  const button=$('verify');button.disabled=true;message('正在验证登录，请稍候…');
+  try{
+    const result=await window.AstrBotPluginPage.apiPost('verify',{});
+    await refresh(false);
+    $('account').textContent=result.logged_in?'已验证登录':'尚未登录';
+    $('account').dataset.state=result.logged_in?'ok':'warn';
+    message(result.logged_in?'当前账号已登录，可以分享内容给机器人了。':'当前账号尚未登录，请获取二维码并扫码。');
+  }catch(error){message('登录验证未完成：'+error.message,true)}
+  finally{button.disabled=false}
+};
+$('login').onclick=async()=>{
+  const button=$('login');button.disabled=true;message('正在获取登录二维码，请稍候…');
+  try{
+    render(await window.AstrBotPluginPage.apiPost('login',{}));
+    if(poll){clearInterval(poll);poll=null}
+    if(!$('qr-panel').hidden)poll=setInterval(refresh,4000);
+  }catch(error){message('二维码获取失败：'+error.message,true)}
+  finally{button.disabled=false}
+};
+window.addEventListener('pagehide',()=>{if(poll)clearInterval(poll)});
+configure(source);refresh();
+</script>
+</body>
+</html>
