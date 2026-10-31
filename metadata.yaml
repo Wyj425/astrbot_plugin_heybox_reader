@@ -5,3 +5,5 @@ version: 1.0.1
 author: Wyj425
 astrbot_version: ">=4.29.3"
 repo: https://github.com/Wyj425/astrbot_plugin_heybox_reader
+support_platforms:
+  - aiocqhttp
