@@ -24,12 +24,7 @@ code{background:#eef2f7;padding:2px 5px;border-radius:4px;font-size:.92em}.tip{f
 </style>
 </head>
 <body data-source="小黑盒">
-<header><h1 id="title">账号与状态</h1><p class="intro" id="intro">在这里验证登录状态，或使用手机 App 扫码登录。</p></header>
-<section id="setup" hidden>
-<h2>先连接小红书读取服务</h2>
-<p>请先在本插件配置中填写<strong>读取服务地址</strong>和<strong>访问令牌</strong>，保存后再回来扫码。</p>
-<p class="tip">还没部署读取服务？打开 <a href="https://github.com/Wyj425/astrbot_plugin_xhs_reader/blob/main/docs/INSTALL.md" target="_blank" rel="noopener noreferrer">手动部署教程</a>，或使用 <a href="https://github.com/Wyj425/astrbot_plugin_xhs_reader#readme" target="_blank" rel="noopener noreferrer">README 中的 Agent 提示词</a>完成配置。</p>
-</section>
+<header><h1 id="title">小黑盒 · 账号与状态</h1><p class="intro" id="intro">登录小黑盒后，把帖子链接或卡片分享给机器人，就能一起聊正文、配图和评论区。</p></header>
 <section aria-labelledby="account-heading">
 <h2 id="account-heading">登录与读取状态</h2>
 <div class="actions">
@@ -44,67 +39,34 @@ code{background:#eef2f7;padding:2px 5px;border-radius:4px;font-size:.92em}.tip{f
 <div class="status-item"><div class="label">最近一次读取</div><div class="value" id="last-result">暂无记录</div></div>
 </div>
 <p class="tip" id="verification">点击“验证当前登录”，检查账号现在是否可用。</p>
-<div id="qr-panel" hidden><img id="qr" alt="登录二维码"><p id="qr-help">请使用手机 App 扫码，并在手机上确认登录。</p><p class="tip">二维码过期后，重新点击“获取登录二维码”。</p></div>
+<div id="qr-panel" hidden><img id="qr" alt="登录二维码"><p id="qr-help">请使用小黑盒 App 扫码，并在手机上确认登录。</p><p class="tip">二维码过期后，重新点击“获取登录二维码”。</p></div>
 <details id="diagnostics" hidden><summary>查看读取错误信息</summary><p id="error-detail"></p></details>
 </section>
 <div class="steps">
 <section><h2>第一次登录</h2>
 <ol><li>先点击<strong>验证当前登录</strong>；如果账号已登录，可直接开始使用。</li>
 <li>尚未登录时，点击<strong>获取登录二维码</strong>。</li>
-<li id="scan-step">使用手机 App 扫码，在手机上确认登录。</li>
+<li id="scan-step">使用手机上的小黑盒 App 扫码，在手机上确认登录。</li>
 <li>点击<strong>验证当前登录</strong>，确认账号可用。</li></ol>
 <p class="tip">如提示验证码或设备确认，请先在手机或平台登录页面完成验证。登录失效后，在这里重新扫码即可。</p>
 </section>
 <section><h2>登录后怎么用</h2>
-<p id="usage">把分享链接或卡片发给机器人，再问一个具体问题。</p>
-<div class="example" id="example"></div>
+<p id="usage">从小黑盒 App 复制帖子链接，或者分享帖子卡片，再告诉机器人想了解哪些内容。</p>
+<div class="example" id="example">读一下这篇帖子的正文、配图和评论，大家在讨论什么？</div>
 <p class="tip">私聊中直接发送；群聊中可以引用分享卡片，再真正 @机器人提问。</p>
-<p class="tip" id="limits"></p>
+<p class="tip" id="limits">配图需要支持图片输入的聊天模型。评论读取范围以当前可取得的部分内容为准。</p>
 </section>
 </div>
 <script type="module">
 const $=id=>document.getElementById(id);
-const copies={
-  'B站':{
-    app:'哔哩哔哩 App',
-    intro:'登录 B站后，把视频链接或卡片分享给机器人，就能讨论视频资料、可用字幕和热门评论。',
-    usage:'支持视频链接、b23.tv 短链接和 BV 号。分享后，可以继续追问视频信息和评论区的观点。',
-    example:'这个视频主要讲了什么？你读到的是字幕还是简介？热门评论怎么看？',
-    limits:'有可用字幕时读取字幕节选；没有字幕时使用视频简介。当前不分析视频画面和音轨。'
-  },
-  '小黑盒':{
-    app:'小黑盒 App',
-    intro:'登录小黑盒后，把帖子链接或卡片分享给机器人，就能一起聊正文、配图和评论区。',
-    usage:'从小黑盒 App 复制帖子链接，或者分享帖子卡片，再告诉机器人想了解哪些内容。',
-    example:'读一下这篇帖子的正文、配图和评论，大家在讨论什么？',
-    limits:'配图需要支持图片输入的聊天模型。评论读取范围以当前可取得的部分内容为准。'
-  },
-  '小红书':{
-    app:'小红书 App',
-    intro:'连接读取服务并登录小红书后，把笔记分享给机器人，就能一起聊正文、配图和评论。',
-    usage:'从小红书 App 复制完整的笔记分享链接，发给机器人后继续提问。',
-    example:'帮我总结这篇笔记。配图里有哪些重点？评论区有哪些不同意见？',
-    limits:'配图需要支持图片输入的聊天模型。评论读取范围以当前可取得的部分内容为准。'
-  }
-};
-let poll=null,source=document.body.dataset.source,copy=null;
-function configure(value){
-  if(!copies[value])return;
-  source=value;copy=copies[value];
-  $('title').textContent=source+' · 账号与状态';document.title=source+' · 账号与状态';
-  $('intro').textContent=copy.intro;$('usage').textContent=copy.usage;
-  $('example').textContent=copy.example;$('limits').textContent=copy.limits;
-  $('scan-step').textContent='使用手机上的'+copy.app+'扫码，在手机上确认登录。';
-  $('qr-help').textContent='请使用'+copy.app+'扫码，并在手机上确认登录。';
-  $('setup').hidden=source!=='小红书';
-}
+const app="小黑盒 App";
+let poll=null;
 function message(text,error=false){$('notice').textContent=text;$('notice').dataset.tone=error?'error':'normal'}
 function timestamp(value){
   const date=new Date(Number(value)*1000);
   return Number(value)>0&&!Number.isNaN(date.getTime())?date.toLocaleString('zh-CN'):'暂无记录';
 }
 function render(data){
-  if(data.source)configure(data.source);
   const state=data.login||data;
   if(data.source){
     const logged=data.logged_in;
@@ -122,7 +84,7 @@ function render(data){
   if(active&&validQR)$('qr').src=state.qr;else $('qr').removeAttribute('src');
   const labels={
     idle:data.logged_in===true?'账号已验证，可以开始分享内容。':'先验证当前登录；尚未登录时，再获取二维码。',
-    scan:'请使用'+(copy?copy.app:'手机 App')+'扫码，并在手机上确认。',
+    scan:'请使用'+app+'扫码，并在手机上确认。',
     confirm:'已扫码，请在手机上确认登录。',
     done:data.logged_in===true?'账号已验证，可以开始分享内容。':'扫码已完成，请点击“验证当前登录”确认账号可用。',
     expired:'二维码已过期，请重新获取。',
@@ -157,7 +119,7 @@ $('login').onclick=async()=>{
   finally{button.disabled=false}
 };
 window.addEventListener('pagehide',()=>{if(poll)clearInterval(poll)});
-configure(source);refresh();
+refresh();
 </script>
 </body>
 </html>

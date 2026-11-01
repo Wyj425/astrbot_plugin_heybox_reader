@@ -19,16 +19,6 @@
     "default": 600,
     "description": "共享搜索和内容缓存秒数（30–1800）"
   },
-  "max_images": {
-    "type": "int",
-    "default": 6,
-    "description": "最多读取的配图数量（0–8）"
-  },
-  "max_comments": {
-    "type": "int",
-    "default": 24,
-    "description": "最多读取的可见评论数量（0–36）"
-  },
   "heybox_max_images": {
     "type": "int",
     "default": 6,

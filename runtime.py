@@ -1,16 +1,13 @@
-"""Protocol v1 helpers, vendored identically so each reader installs independently."""
+"""Protocol v1 conversation routing and this platform's reading helpers."""
 import asyncio
-import base64
 import copy
 import html
-import io
 import json
 import re
-import sys
 import time
 from collections import OrderedDict
 from pathlib import Path
-from urllib.parse import urlsplit, parse_qs
+from urllib.parse import urlsplit
 import aiohttp
 from astrbot.api import logger
 
@@ -71,71 +68,14 @@ def requested_source(text):
     return names[0] if len(names)==1 else None
 
 
-async def expand(url, domains, stop_when=None):
-    from urllib.parse import urljoin
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=12)) as session:
-        for _ in range(5):
-            if not approved(url,domains):raise ValueError('untrusted_destination')
-            # A validated redirect already identifies the video. Its HTML page is
-            # not needed by the API reader and may independently return HTTP 412.
-            if stop_when is not None and stop_when(url):return url
-            async with session.get(url,allow_redirects=False,headers={'User-Agent':'Mozilla/5.0'}) as r:
-                if r.status in (301,302,303,307,308):
-                    url=urljoin(url,r.headers.get('Location',''));continue
-                if r.status>=400:raise ValueError('link_unavailable')
-                return url
-    raise ValueError('too_many_redirects')
 
 
-async def resolve_bili(value):
-    if re.fullmatch(r'BV[A-Za-z0-9]{10}',value):return value
-    if not value.startswith('http'):value='https://'+value
-    if not approved(value,('bilibili.com','b23.tv')):raise ValueError('invalid_bili_url')
-    if urlsplit(value).hostname=='b23.tv':
-        value=await expand(value,('bilibili.com','b23.tv'),
-            stop_when=lambda u:bool(re.fullmatch(r'/video/(?:BV[A-Za-z0-9]{10}|av\d+)/?',urlsplit(u).path)))
-    match=re.search(r'/video/(BV[A-Za-z0-9]{10})(?:/|$)',urlsplit(value).path)
-    if match:return match[1]
-    match=re.search(r'/video/av(\d+)',urlsplit(value).path)
-    if match:
-        from bilibili_api import video
-        return video.Video(aid=int(match[1])).get_bvid()
-    raise ValueError('video_id_missing')
 
 
-async def resolve_xhs(value):
-    if not approved(value,('xiaohongshu.com','xhslink.com')):raise ValueError('invalid_xhs_url')
-    if 'xhslink.com' in (urlsplit(value).hostname or ''):value=await expand(value,('xiaohongshu.com','xhslink.com'))
-    if not re.search(r'/(?:explore|discovery/item)/[a-fA-F0-9]{24}(?:/|$)',urlsplit(value).path):raise ValueError('note_id_missing')
-    return value
 
 
-def normalize_image(raw):
-    from PIL import Image,ImageOps
-    with Image.open(io.BytesIO(raw)) as img:
-        if img.width*img.height>20000000:raise ValueError('image_too_large')
-        img=ImageOps.exif_transpose(img);img.thumbnail((1600,2000))
-        out=io.BytesIO();img.convert('RGB').save(out,format='JPEG',quality=86)
-    return 'data:image/jpeg;base64,'+base64.b64encode(out.getvalue()).decode()
 
 
-async def fetch_images(urls, domains):
-    sem=asyncio.Semaphore(3)
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=8)) as session:
-        async def one(url):
-            if url.startswith('//'):url='https:'+url
-            if not approved(url,domains):return None
-            async with sem:
-                try:
-                    async with session.get(url,allow_redirects=False) as r:
-                        if r.status!=200 or not r.headers.get('Content-Type','').startswith('image/'):return None
-                        body=bytearray()
-                        async for part in r.content.iter_chunked(65536):
-                            body.extend(part)
-                            if len(body)>5*1024*1024:return None
-                    return await asyncio.to_thread(normalize_image,body)
-                except Exception:return None
-        return [x for x in await asyncio.gather(*(one(u) for u in urls[:8])) if x]
 
 
 def evidence(result, images_attached=True):
@@ -203,7 +143,7 @@ class PlatformService:
         return await self.cache.get(('read',url,images),lambda:self._bounded(lambda:self.backend.read(url,images)))
     def status(self):
         return {'source':self.source,'api_version':1,'last_error':self.last_error,'last_success':self.last_ok,
-                'credential_present':(self.root/'credentials.json').exists() if self.source!='小红书' else bool(self.config.get('service_url')),
+                'credential_present':(self.root/'credentials.json').exists(),
                 'login':self.login_state,'logged_in':self.login_valid,'verified_at':self.verified_at}
     async def initialize(self):
         self.context.register_web_api('/'+self.name+'/status',self.web_status,['GET'],'读取平台登录状态')

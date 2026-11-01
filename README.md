@@ -4,7 +4,7 @@
 
 把帖子链接或分享卡片发给机器人，它就能结合实际读到的内容总结重点、解释配图、讨论网友的观点。
 
-<img src="logo.png" width="120" alt="小黑盒内容读取插件图标">
+<img src="https://raw.githubusercontent.com/Wyj425/astrbot_plugin_heybox_reader/main/logo.png" width="120" alt="小黑盒内容读取插件图标">
 
 ## 能做什么
 
@@ -104,8 +104,8 @@
 
 ## 开发资料
 
-- [接口说明](docs/API.md)
-- [更新记录](CHANGELOG.md)
-- [发布检查](docs/RELEASING.md)
+- [接口说明](https://github.com/Wyj425/astrbot_plugin_heybox_reader/blob/main/docs/API.md)
+- [更新记录](https://github.com/Wyj425/astrbot_plugin_heybox_reader/blob/main/CHANGELOG.md)
+- [发布检查](https://github.com/Wyj425/astrbot_plugin_heybox_reader/blob/main/docs/RELEASING.md)
 
-本插件采用 [MIT 许可证](LICENSE)，第三方组件遵循各自的许可证。
+本插件采用 [MIT 许可证](https://github.com/Wyj425/astrbot_plugin_heybox_reader/blob/main/LICENSE)，第三方组件遵循各自的许可证。

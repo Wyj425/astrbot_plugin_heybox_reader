@@ -1,20 +1,8 @@
-import asyncio, json, re, time
-from datetime import datetime, timedelta
-from pathlib import Path
-from urllib.parse import urlsplit, parse_qs, urlencode
-from zoneinfo import ZoneInfo
-import aiohttp
-from astrbot.api import logger
-TZ = ZoneInfo('Asia/Shanghai')
+import json, re, time
+from urllib.parse import urlsplit
 def clean(text, limit=4000):
     import html
     return re.sub(r'<[^>]*>', '', html.unescape(str(text or '')))[:limit].strip()
-async def bounded_json(response, limit=3*1024*1024):
-    body=bytearray()
-    async for chunk in response.content.iter_chunked(65536):
-        body.extend(chunk)
-        if len(body)>limit: raise ValueError('source response too large')
-    return json.loads(body)
 
 def matches(text, words):
     text = text.casefold()
