@@ -43,7 +43,8 @@ class Event:
 class Followups(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         api=types.ModuleType('astrbot.api');api.logger=logging.getLogger('followup-test')
-        spec=importlib.util.spec_from_file_location('_reader_followup_test',ROOT/'runtime.py')
+        package=types.ModuleType('_reader_followup_test');package.__path__=[str(ROOT)];sys.modules[package.__name__]=package
+        spec=importlib.util.spec_from_file_location('_reader_followup_test.runtime',ROOT/'runtime.py')
         self.runtime=importlib.util.module_from_spec(spec)
         with patch.dict(sys.modules,{'aiohttp':types.ModuleType('aiohttp'),'astrbot':types.ModuleType('astrbot'),'astrbot.api':api}):
             spec.loader.exec_module(self.runtime)
@@ -81,7 +82,9 @@ class Followups(unittest.IsolatedAsyncioTestCase):
         req=await self.enrich(event)
         self.readers['B站'].read.assert_awaited_once()
         for name in ('小红书','小黑盒'):self.readers[name].read.assert_not_awaited()
-        self.assertIn('B站 body',req.prompt);self.assertNotIn('小红书 body',req.prompt)
+        combined=req.prompt+'\n'+''.join(p.get('text','') if isinstance(p,dict) else p.text for p in req.extra_user_content_parts)
+        self.assertIn('B站 body',combined);self.assertNotIn('小红书 body',combined)
+        self.assertNotIn('B站 body',req.prompt)
         self.assertEqual(event.actions,[])
 
     async def test_reference_is_frozen_before_later_share_arrives(self):
@@ -93,7 +96,7 @@ class Followups(unittest.IsolatedAsyncioTestCase):
         self.readers['小红书'].read.assert_not_awaited()
 
     async def test_empty_cache_history_chooses_latest_across_all_platforms_once(self):
-        event=Event('这个视频你能看到哪些信息');event.history=self.history()
+        event=Event('我发的视频你能看到哪些信息');event.history=self.history()
         await self.observe(event);await self.enrich(event)
         self.readers['B站'].read.assert_awaited_once()
         self.readers['小红书'].read.assert_not_awaited()
